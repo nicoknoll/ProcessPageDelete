@@ -12,7 +12,7 @@ class ProcessPageDelete extends Process {
 	public static function getModuleInfo() {
 		return array(
 			'title' => 'Page Delete', 
-			'version' => '1.00', 
+			'version' => '1.01', 
 			'summary' => 'Adds a "delete" link to the page list.',
 			'autoload' => true 
 		);
@@ -20,26 +20,34 @@ class ProcessPageDelete extends Process {
 	
 	const adminPageName = 'delete';
 	
+	public function init() {
+		$this->addHook('ProcessPageView::execute', $this, 'addJavascript');	
+	}
+	
 	public function ___execute() {
-    	$page = $this->pages->get((int) $this->input->get->id);
-    	$trash = $this->pages->get('name=trash');
+		$page = $this->pages->get((int) $this->input->get->id);
+		if(!$page->deleteable()) throw new WirePermissionException("You don't have access to delete that page");
+		
+    	$parent_id = $page->parent_id;
     	
     	$title = $page->url;
-    	$page->parent = $trash;
     	
-    	$page->save();
+		$this->pages->trash($page); 
     	
     	$this->message("Moved page to trash: $title"); 
     	
-    	$this->session->redirect('../');
+    	$this->session->redirect("../?open={$parent_id}");
     }
 
 	
 	public function ready() {
 	    $process = wire('page')->process;
+	    
 	    if($process == 'ProcessPageList') {
-	        $this->addHookAfter("ProcessPageListRender::getPageActions", $this, 'hookPageListActions');
+	    	$this->addHookAfter("ProcessPageListRender::getPageActions", $this, 'hookPageListActions');
 	    }
+	    
+	   
 	}
 
 	public function hookPageListActions(HookEvent $event) {
@@ -55,10 +63,24 @@ class ProcessPageDelete extends Process {
 		        );
 		        
 		    $actions = $this->array_insert($actions, ((int) count($actions)-1), $new_action);
-	
+			
 		    $event->return = $actions;
 	    }
 	}
+	
+	
+	public function addJavascript(HookEvent $event) {
+		$js = '
+		<script type="text/javascript">
+		$(document).ready(function() {
+			$("li.PageListActiondelete a").live("click", function(el){
+				if(!confirm("Are you sure?")) { return false; }
+			});
+		});
+		</script>';
+		$event->return = str_ireplace("</head>", $js.'</head>', $event->return); 
+	}
+
 	
 	public function ___install() {
 
