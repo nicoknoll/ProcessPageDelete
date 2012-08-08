@@ -12,7 +12,7 @@ class ProcessPageDelete extends Process {
 	public static function getModuleInfo() {
 		return array(
 			'title' => 'Page Delete', 
-			'version' => '1.02', 
+			'version' => '1.03', 
 			'summary' => 'Adds a "delete" link to the page list.',
 			'permission' => 'page-delete',
 			'autoload' => true 
@@ -22,8 +22,11 @@ class ProcessPageDelete extends Process {
 	const adminPageName = 'delete';
 	
 	public function init() {
-		$this->addHook('ProcessPageView::execute', $this, 'addJavascript');	
+		if(strpos($_SERVER['REQUEST_URI'],wire('pages')->get(wire('config')->adminRootPageID)->url) !== false) {
+			$this->addHook('ProcessPageView::execute', $this, 'addJavascript');	
+		}
 	}
+
 	
 	public function ___execute() {
 		$page = $this->pages->get((int) $this->input->get->id);
