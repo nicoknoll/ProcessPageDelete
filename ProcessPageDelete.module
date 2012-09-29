@@ -22,7 +22,7 @@ class ProcessPageDelete extends Process {
 	const adminPageName = 'delete';
 	
 	public function init() {
-		if(strpos($_SERVER['REQUEST_URI'],wire('pages')->get(wire('config')->adminRootPageID)->url) !== false) {
+		if(isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'],wire('pages')->get(wire('config')->adminRootPageID)->url) !== false) {
 			$this->addHook('ProcessPageView::execute', $this, 'addJavascript');	
 		}
 	}
