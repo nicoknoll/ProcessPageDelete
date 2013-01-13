@@ -62,7 +62,7 @@ class ProcessPageDelete extends Process {
 		    
 		    $new_action = array(
 		        'cn' => 'delete',
-		        'name' => 'delete',
+		        'name' => __('Delete', '/wire/modules/Process/ProcessPageEdit/ProcessPageEdit.module'),
 		        'url' => $this->config->urls->admin . "page/delete/?id={$page->id}"
 		        );
 		        
