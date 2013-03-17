@@ -12,7 +12,7 @@ class ProcessPageDelete extends Process {
 	public static function getModuleInfo() {
 		return array(
 			'title' => 'Page Delete', 
-			'version' => '1.03', 
+			'version' => '1.04', 
 			'summary' => 'Adds a "delete" link to the page list.',
 			'permission' => 'page-delete',
 			'autoload' => true 
@@ -30,7 +30,7 @@ class ProcessPageDelete extends Process {
 	
 	public function ___execute() {
 		$page = $this->pages->get((int) $this->input->get->id);
-		if(!$page->deleteable()) throw new WirePermissionException("You don't have access to delete that page");
+		if(!$page->deleteable() || $config->demo == true) throw new WirePermissionException("You don't have access to delete that page");
 		
     	$parent_id = $page->parent_id;
     	
@@ -57,7 +57,7 @@ class ProcessPageDelete extends Process {
 	public function hookPageListActions(HookEvent $event) {
 	    $page = $event->arguments[0];
 	    
-	    if($page->deleteable()) {
+	    if($page->deleteable() && $config->demo == false) {
 		    $actions = $event->return;
 		    
 		    $new_action = array(
