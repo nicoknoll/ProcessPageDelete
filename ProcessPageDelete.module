@@ -12,7 +12,7 @@ class ProcessPageDelete extends Process {
 	public static function getModuleInfo() {
 		return array(
 			'title' => 'Page Delete', 
-			'version' => '1.05',
+			'version' => '1.06',
 			'summary' => 'Adds a "delete" link to the page list.',
 			'permission' => 'page-delete',
 			'autoload' => true 
@@ -23,7 +23,7 @@ class ProcessPageDelete extends Process {
 	
 	public function init() {
 		if(isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'],wire('pages')->get(wire('config')->adminRootPageID)->url) !== false) {
-			$this->addHook('ProcessPageView::execute', $this, 'addJavascript');	
+			parent::init();	
 		}
 	}
 
@@ -72,19 +72,6 @@ class ProcessPageDelete extends Process {
 	    }
 	}
 	
-	
-	public function addJavascript(HookEvent $event) {
-		$js = '
-		<script type="text/javascript">
-		$(document).ready(function() {
-			$("li.PageListActiondelete a").live("click", function(el){
-				if(!confirm("Are you sure?")) { return false; }
-			});
-		});
-		</script>';
-		$event->return = str_ireplace("</head>", $js.'</head>', $event->return); 
-	}
-
 	
 	public function ___install() {
 
