@@ -12,7 +12,7 @@ class ProcessPageDelete extends Process {
 	public static function getModuleInfo() {
 		return array(
 			'title' => __('Page Delete'), 
-			'version' => '1.07',
+			'version' => '1.08',
 			'summary' => __('Adds a delete link to the page list.'),
 			'permission' => 'page-delete',
 			'autoload' => true 

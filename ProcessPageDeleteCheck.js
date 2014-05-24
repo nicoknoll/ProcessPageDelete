@@ -1,5 +1,5 @@
 $(document).ready(function() {
-    $("li.PageListActiondelete a").on("click", function(el){
+    $(document).on('click', "li.PageListActiondelete a", function(e) {
         if(!confirm(config.ProcessPageDelete.sure)) { return false; }
     });
 });
