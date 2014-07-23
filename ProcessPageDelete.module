@@ -120,7 +120,10 @@ class ProcessPageDelete extends Process {
 	}
 
 	public function ___uninstall() {
-		$page = $this->getInstalledPage();	
+		$parent = $this->pages->get("name=page,parent=".$this->config->adminRootPageID);
+        	$page = $parent->child("name=delete");
+        	// $page = $this->getInstalledPage();
+        	
 		if($page->id) { 
 			$this->message(sprintf($this->_("Removed %s"), $page->path));
 			$this->pages->delete($page); 
