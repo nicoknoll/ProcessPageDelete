@@ -183,6 +183,7 @@ class ProcessPageDelete extends Process implements ConfigurableModule {
 		$page->name = "delete"; 
 		$page->title = "Delete Page";
 		$page->process = $this; 
+		$page->status = Page::statusHidden;
 		$page->sort = $parent->numChildren;
 		$page->save();
 
