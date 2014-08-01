@@ -8,60 +8,58 @@
  */
 
 class ProcessPageDelete extends Process {
-	
+
 	public static function getModuleInfo() {
 		return array(
 			'title' => __('Page Delete'), 
-			'version' => '1.08',
+			'version' => '1.1.0',
 			'summary' => __('Adds a delete link to the page list.'),
 			'permission' => 'page-delete',
 			'autoload' => true 
 		);
 	}
-	
-	const adminPageName = 'delete';
-	
+
 	public function init() {
-		
+
 		parent::init();
-		
+
 		if(isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'],wire('pages')->get(wire('config')->adminRootPageID)->url) !== false) {
 			$this->addHook('ProcessPageView::execute', $this, 'addJavascript');
-			
+
 			$this->config->js('ProcessPageDelete', array(
 				'sure' => __("Are you sure?")
 			));
 		}
 	}
-	
+
 	public function ready() {		
-	    $process = wire('page')->process;
-	    
-	    if($process == 'ProcessPageList') {
-	    		$this->addHookAfter("ProcessPageListRender::getPageActions", $this, 'hookPageListActions');
-	    }
+		$process = wire('page')->process;
+
+		if($process == 'ProcessPageList') {
+			$this->addHookAfter("ProcessPageListRender::getPageActions", $this, 'hookPageListActions');
+		}
 	}
 
 	public function hookPageListActions(HookEvent $event) {
-	    $page = $event->arguments[0];
-	    	    
-	    if($page->deleteable() && wire('config')->demo == false && $page->rootParent != wire('pages')->get('/trash/')) {
+		$page = $event->arguments[0];
 
-		    $actions = $event->return;
-		    
-		    $new_action = array(
-		        'cn' => 'delete',
-		        'name' => __('Delete'),
-		        'url' => $this->config->urls->admin . "page/delete/?id={$page->id}"
-		    );
-		        
-		    $actions = $this->array_insert($actions, ((int) count($actions)-1), $new_action);
-			
-		    $event->return = $actions;
-	    }
+		if($page->deleteable() && wire('config')->demo == false && $page->rootParent != wire('pages')->get('/trash/')) {
+
+			$actions = $event->return;
+
+			$new_action = array(
+				'cn' => 'delete',
+				'name' => __('Delete'),
+				'url' => $this->config->urls->admin . "page/delete/?id={$page->id}"
+			);
+
+			$actions = $this->array_insert($actions, ((int) count($actions)-1), $new_action);
+
+			$event->return = $actions;
+		}
 	}
-	
-	
+
+
 	public function addJavascript(HookEvent $event) {
 		/* js path */
 		$class = $this->className();
@@ -71,74 +69,65 @@ class ProcessPageDelete extends Process {
 
 		$event->return = str_replace("</head>", '<script type="text/javascript" src="'.$path.'"></script></head>', $event->return); 
 	}
-	
-	
-	
-	
+
+
+
+
 	public function ___execute() {
 		$page = $this->pages->get((int) $this->input->get->id);
 		if(!$page->deleteable() || wire('config')->demo == true) throw new WirePermissionException($this->_("You don't have access to delete that page."));
-	
+
 		$parent_id = $page->parent_id;
 		$path = $page->url;
-	
+
 		$this->pages->trash($page); 
-	
+
 		$this->message(sprintf($this->_("Moved page to trash: %s"), $path));
 		$this->session->redirect("../?open={$parent_id}");
 	}
-	
-	
+
+
 	/* --- module un-/installation part --- */
-	
+
 	public function ___install() {
 
-		if(ProcessWire::versionMajor == 2 && ProcessWire::versionMinor < 1) {
-			throw new WireException($this->_("This module requires ProcessWire 2.1 or newer")); 
+		if(ProcessWire::versionMajor == 2 && ProcessWire::versionMinor < 2) {
+			throw new WireException($this->_("This module requires ProcessWire 2.2 or newer")); 
 		}
 
-		$page = $this->getInstalledPage();
+		// create "delete" page
+		$page = new Page();
+		$page->parent = $this->pages->get("name=page,parent=".$this->config->adminRootPageID); 
+		$page->template = $this->templates->get('admin');
+		$page->name = "delete"; 
+		$page->title = "Delete Page";
+		$page->process = $this; 
+		$page->sort = $parent->numChildren;
+		$page->save();
+
+		// success message
 		$this->message(sprintf($this->_("Installed to %s"), $page->path)); 
 	}
 
-	protected function getInstalledPage() {
-		$parent = $this->pages->get("name=page,parent=".$this->config->adminRootPageID); 
-		$page = $parent->child("name=delete"); 
-
-		if(!$page->id) { 	
-			$page = new Page();
-			$page->parent = $parent; 
-			$page->template = $this->templates->get('admin');
-			$page->name = "delete"; 
-			$page->title = "Delete Page";
-			//$page->addStatus(Page::statusHidden);
-			$page->process = $this; 
-			$page->sort = $parent->numChildren;
-			$page->save();
-		}
-		return $page; 	
-	}
 
 	public function ___uninstall() {
 		$parent = $this->pages->get("name=page,parent=".$this->config->adminRootPageID);
-        	$page = $parent->child("name=delete");
-        	// $page = $this->getInstalledPage();
-        	
+		$page = $parent->child("name=delete");
+
 		if($page->id) { 
 			$this->message(sprintf($this->_("Removed %s"), $page->path));
 			$this->pages->delete($page); 
 		}
 	}
-	
-	
+
+
 	/* --- helper functions --- */
-	
+
 	private function array_insert($array, $pos, $val) {
 	   $array2 = array_splice($array,$pos);
 	   $array[] = $val;
 	   $array = array_merge($array,$array2);
-	   
+
 	   return $array;
 	}
 }
-
