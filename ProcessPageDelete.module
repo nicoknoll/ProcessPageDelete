@@ -12,7 +12,7 @@ class ProcessPageDelete extends Process implements ConfigurableModule {
 	public static function getModuleInfo() {
 		return array(
 			'title' => __('Page Delete'), 
-			'version' => '1.2.2',
+			'version' => '1.2.3',
 			'summary' => __('Adds a delete/trash link to the page list.'),
 			'permission' => 'page-delete',
 			'autoload' => 'process=ProcessPageList' 
@@ -50,27 +50,16 @@ class ProcessPageDelete extends Process implements ConfigurableModule {
 
 		parent::init();
 	
-		//  add the jQuery hook
-		$this->addHook('ProcessPageView::execute', $this, 'addJavascript');
+		//  add the hooks
+		$this->addHookAfter("ProcessPageListRender::getPageActions", $this, 'hookPageListActions');
+		$this->addHookAfter('ProcessPageList::execute', $this, 'addJavascript');
 		
 		// add language to javascript
 		$this->config->js('ProcessPageDelete', array(
 			'sure' => __("Are you sure?")
 		));
 	}
-
-
-	/**
-	* Add remaining hooks
-	*
-	*/
-	public function ready() {		
-		$process = wire('page')->process;
-		$this->addHookAfter("ProcessPageListRender::getPageActions", $this, 'hookPageListActions');
-		
-		
-	}
-
+	
 
 	/**
 	* The hook function
@@ -100,18 +89,23 @@ class ProcessPageDelete extends Process implements ConfigurableModule {
 		}
 	}
 
+
 	/**
 	* Adding Javascript manually because this module is an autoload module and javascript 
 	* would be added before jquery if i would use the normal $config->script->add().
 	*/
+
 	public function addJavascript(HookEvent $event) {
 		// js path
+	
+		if($this->config->ajax) return; // so it only gets added on first time markup output
+	
 		$class = $this->className();
 		$info = $this->getModuleInfo();
 		$version = (int) $info['version'];
 		$path = $this->config->urls->$class . "ProcessPageDeleteCheck.js?v=$version";
-		
-		$event->return = str_replace("</head>", '<script type="text/javascript" src="'.$path.'"></script></head>', $event->return); 
+	
+		$event->return .= '<script type="text/javascript" src="'.$path.'"></script>';
 	}
 
 
@@ -205,8 +199,8 @@ class ProcessPageDelete extends Process implements ConfigurableModule {
 		$page = $parent->child("name=delete");
 
 		if($page->id) { 
-			$this->pages->delete($page); 
 			$this->message(sprintf($this->_("Removed %s"), $page->path));
+			$this->pages->delete($page); 
 		}
 	}
 
