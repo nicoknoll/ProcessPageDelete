@@ -49,10 +49,10 @@ class ProcessPageDelete extends Process implements ConfigurableModule {
 	public function init() {
 
 		parent::init();
-	
+
 		//  add the jQuery hook
 		$this->addHook('ProcessPageView::execute', $this, 'addJavascript');
-		
+
 		// add language to javascript
 		$this->config->js('ProcessPageDelete', array(
 			'sure' => __("Are you sure?")
@@ -203,8 +203,8 @@ class ProcessPageDelete extends Process implements ConfigurableModule {
 		$page = $parent->child("name=delete");
 
 		if($page->id) { 
-			$this->message(sprintf($this->_("Removed %s"), $page->path));
 			$this->pages->delete($page); 
+			$this->message(sprintf($this->_("Removed %s"), $page->path));
 		}
 	}
 
