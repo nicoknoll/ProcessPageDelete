@@ -12,7 +12,7 @@ class ProcessPageDelete extends Process implements ConfigurableModule {
 	public static function getModuleInfo() {
 		return array(
 			'title' => __('Page Delete'), 
-			'version' => '1.2.1',
+			'version' => '1.2.2',
 			'summary' => __('Adds a delete/trash link to the page list.'),
 			'permission' => 'page-delete',
 			'autoload' => 'process=ProcessPageList' 
@@ -205,8 +205,8 @@ class ProcessPageDelete extends Process implements ConfigurableModule {
 		$page = $parent->child("name=delete");
 
 		if($page->id) { 
-			$this->message(sprintf($this->_("Removed %s"), $page->path));
 			$this->pages->delete($page); 
+			$this->message(sprintf($this->_("Removed %s"), $page->path));
 		}
 	}
 
