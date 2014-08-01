@@ -49,10 +49,10 @@ class ProcessPageDelete extends Process implements ConfigurableModule {
 	public function init() {
 
 		parent::init();
-
+	
 		//  add the jQuery hook
 		$this->addHook('ProcessPageView::execute', $this, 'addJavascript');
-
+		
 		// add language to javascript
 		$this->config->js('ProcessPageDelete', array(
 			'sure' => __("Are you sure?")
@@ -67,6 +67,8 @@ class ProcessPageDelete extends Process implements ConfigurableModule {
 	public function ready() {		
 		$process = wire('page')->process;
 		$this->addHookAfter("ProcessPageListRender::getPageActions", $this, 'hookPageListActions');
+		
+		
 	}
 
 
@@ -77,7 +79,7 @@ class ProcessPageDelete extends Process implements ConfigurableModule {
 	public function hookPageListActions(HookEvent $event) {
 		$page = $event->arguments[0];
 
-		if($page->deleteable() && wire('config')->demo == false && $page->rootParent != wire('pages')->get('/trash/')) {
+		if($page->deleteable() && wire('config')->demo == false && $page->rootParent != wire('pages')->get('/trash/') && $page->rootParent != wire('pages')->get($this->config->adminRootPageID)) {
 
 			$actions = $event->return;
 
@@ -108,7 +110,7 @@ class ProcessPageDelete extends Process implements ConfigurableModule {
 		$info = $this->getModuleInfo();
 		$version = (int) $info['version'];
 		$path = $this->config->urls->$class . "ProcessPageDeleteCheck.js?v=$version";
-
+		
 		$event->return = str_replace("</head>", '<script type="text/javascript" src="'.$path.'"></script></head>', $event->return); 
 	}
 
@@ -203,8 +205,8 @@ class ProcessPageDelete extends Process implements ConfigurableModule {
 		$page = $parent->child("name=delete");
 
 		if($page->id) { 
-			$this->pages->delete($page); 
 			$this->message(sprintf($this->_("Removed %s"), $page->path));
+			$this->pages->delete($page); 
 		}
 	}
 
