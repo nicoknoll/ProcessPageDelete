@@ -12,14 +12,14 @@ class ProcessPageDelete extends Process implements ConfigurableModule {
 	public static function getModuleInfo() {
 		return array(
 			'title' => __('Page Delete'), 
-			'version' => '1.2.0',
+			'version' => '1.2.1',
 			'summary' => __('Adds a delete/trash link to the page list.'),
 			'permission' => 'page-delete',
-			'autoload' => true 
+			'autoload' => 'process=ProcessPageList' 
 		);
 	}
-	
-	
+
+
 	/**
 	 * Default configuration
 	 *
@@ -29,8 +29,8 @@ class ProcessPageDelete extends Process implements ConfigurableModule {
 			'action' => 'trash' // trash or delete
 		);
 	}
-	
-	
+
+
 	/**
 	 * Populate default configuration (will be overwritten after constructor with user's own configuration)
 	 *
@@ -40,8 +40,8 @@ class ProcessPageDelete extends Process implements ConfigurableModule {
 			$this->$key = $value;
 		}
 	}
-	
-	
+
+
 	/**
 	* Initializing the module and adding javascript
 	*
@@ -49,14 +49,14 @@ class ProcessPageDelete extends Process implements ConfigurableModule {
 	public function init() {
 
 		parent::init();
-
-		if(isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'],wire('pages')->get(wire('config')->adminRootPageID)->url) !== false) {
-			$this->addHook('ProcessPageView::execute', $this, 'addJavascript');
-
-			$this->config->js('ProcessPageDelete', array(
-				'sure' => __("Are you sure?")
-			));
-		}
+	
+		//  add the jQuery hook
+		$this->addHook('ProcessPageView::execute', $this, 'addJavascript');
+		
+		// add language to javascript
+		$this->config->js('ProcessPageDelete', array(
+			'sure' => __("Are you sure?")
+		));
 	}
 
 
@@ -66,13 +66,10 @@ class ProcessPageDelete extends Process implements ConfigurableModule {
 	*/
 	public function ready() {		
 		$process = wire('page')->process;
-
-		if($process == 'ProcessPageList') {
-			$this->addHookAfter("ProcessPageListRender::getPageActions", $this, 'hookPageListActions');
-		}
+		$this->addHookAfter("ProcessPageListRender::getPageActions", $this, 'hookPageListActions');
 	}
-	
-	
+
+
 	/**
 	* The hook function
 	*
@@ -88,7 +85,7 @@ class ProcessPageDelete extends Process implements ConfigurableModule {
 				'cn' => 'delete',
 				'url' => $this->config->urls->admin . "page/delete/?id={$page->id}"
 			);
-			
+
 			if($this->action == 'trash') {
 				$new_action['name'] = __('Trash');
 			} else {
@@ -102,11 +99,11 @@ class ProcessPageDelete extends Process implements ConfigurableModule {
 	}
 
 	/**
-	* Adding Javascript manually
-	*
+	* Adding Javascript manually because this module is an autoload module and javascript 
+	* would be added before jquery if i would use the normal $config->script->add().
 	*/
 	public function addJavascript(HookEvent $event) {
-		/* js path */
+		// js path
 		$class = $this->className();
 		$info = $this->getModuleInfo();
 		$version = (int) $info['version'];
@@ -127,7 +124,7 @@ class ProcessPageDelete extends Process implements ConfigurableModule {
 
 		$parent_id = $page->parent_id;
 		$path = $page->url;
-		
+
 		if($this->action == 'trash') {
 			$this->pages->trash($page); 
 			$this->message(sprintf($this->_("Moved page to trash: %s"), $path));
@@ -136,7 +133,7 @@ class ProcessPageDelete extends Process implements ConfigurableModule {
 			$this->message(sprintf($this->_("Deleted page: %s"), $path));
 		}
 
-		
+
 		$this->session->redirect("../?open={$parent_id}");
 	}
 
@@ -147,17 +144,17 @@ class ProcessPageDelete extends Process implements ConfigurableModule {
 	 *
 	 */
 	static public function getModuleConfigInputfields(array $data) {
-	
+
 		// this is a container for fields, basically like a fieldset
 		$fields = new InputfieldWrapper();
-	
+
 		// since this is a static function, we can't use $this->modules, so get them from the global wire() function
 		$modules = wire('modules');
-	
+
 		// merge default config settings (custom values overwrite defaults)
 		$defaults = self::getDefaultConfig();
 		$data = array_merge($defaults, $data);
-	
+
 		// sender name
 		$field = $modules->get("InputfieldRadios");
 		$field->name = "action";
@@ -167,7 +164,7 @@ class ProcessPageDelete extends Process implements ConfigurableModule {
 		$field->addOption('trash', 'Trash');
 		$field->value = $data['action'];
 		$fields->add($field);
-	
+
 		return $fields;
 	}
 
