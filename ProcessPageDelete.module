@@ -177,8 +177,10 @@ class ProcessPageDelete extends Process implements ConfigurableModule {
 		}
 
 		// create "delete" page
+		$parent = $this->pages->get("name=page,parent=".$this->config->adminRootPageID); 
+		
 		$page = new Page();
-		$page->parent = $this->pages->get("name=page,parent=".$this->config->adminRootPageID); 
+		$page->parent = $parent;
 		$page->template = $this->templates->get('admin');
 		$page->name = "delete"; 
 		$page->title = "Delete Page";
