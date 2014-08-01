@@ -141,3 +141,4 @@ class ProcessPageDelete extends Process {
 	   return $array;
 	}
 }
+
