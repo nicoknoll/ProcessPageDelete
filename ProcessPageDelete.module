@@ -3,22 +3,49 @@
 /**
  * ProcessPageDelete
  *
- * By Nico Knoll (http://www.nico-knoll.de/)
+ * By Nico Knoll (http://nico.is/)
  *
  */
 
-class ProcessPageDelete extends Process {
+class ProcessPageDelete extends Process implements ConfigurableModule {
 
 	public static function getModuleInfo() {
 		return array(
 			'title' => __('Page Delete'), 
-			'version' => '1.1.0',
-			'summary' => __('Adds a delete link to the page list.'),
+			'version' => '1.2.0',
+			'summary' => __('Adds a delete/trash link to the page list.'),
 			'permission' => 'page-delete',
 			'autoload' => true 
 		);
 	}
-
+	
+	
+	/**
+	 * Default configuration
+	 *
+	 */
+	static public function getDefaultConfig() {
+		return array(
+			'action' => 'trash' // trash or delete
+		);
+	}
+	
+	
+	/**
+	 * Populate default configuration (will be overwritten after constructor with user's own configuration)
+	 *
+	 */
+	public function __construct() {
+		foreach(self::getDefaultConfig() as $key => $value) {
+			$this->$key = $value;
+		}
+	}
+	
+	
+	/**
+	* Initializing the module and adding javascript
+	*
+	*/
 	public function init() {
 
 		parent::init();
@@ -32,6 +59,11 @@ class ProcessPageDelete extends Process {
 		}
 	}
 
+
+	/**
+	* Add remaining hooks
+	*
+	*/
 	public function ready() {		
 		$process = wire('page')->process;
 
@@ -39,7 +71,12 @@ class ProcessPageDelete extends Process {
 			$this->addHookAfter("ProcessPageListRender::getPageActions", $this, 'hookPageListActions');
 		}
 	}
-
+	
+	
+	/**
+	* The hook function
+	*
+	*/
 	public function hookPageListActions(HookEvent $event) {
 		$page = $event->arguments[0];
 
@@ -49,9 +86,14 @@ class ProcessPageDelete extends Process {
 
 			$new_action = array(
 				'cn' => 'delete',
-				'name' => __('Delete'),
 				'url' => $this->config->urls->admin . "page/delete/?id={$page->id}"
 			);
+			
+			if($this->action == 'trash') {
+				$new_action['name'] = __('Trash');
+			} else {
+				$new_action['name'] = __('Delete');
+			}
 
 			$actions = $this->array_insert($actions, ((int) count($actions)-1), $new_action);
 
@@ -59,7 +101,10 @@ class ProcessPageDelete extends Process {
 		}
 	}
 
-
+	/**
+	* Adding Javascript manually
+	*
+	*/
 	public function addJavascript(HookEvent $event) {
 		/* js path */
 		$class = $this->className();
@@ -72,23 +117,66 @@ class ProcessPageDelete extends Process {
 
 
 
-
+	/**
+	* Execute function (deletes or trashes the page)
+	*
+	*/
 	public function ___execute() {
 		$page = $this->pages->get((int) $this->input->get->id);
 		if(!$page->deleteable() || wire('config')->demo == true) throw new WirePermissionException($this->_("You don't have access to delete that page."));
 
 		$parent_id = $page->parent_id;
 		$path = $page->url;
+		
+		if($this->action == 'trash') {
+			$this->pages->trash($page); 
+			$this->message(sprintf($this->_("Moved page to trash: %s"), $path));
+		} else {
+			$this->pages->delete($page, true); 
+			$this->message(sprintf($this->_("Deleted page: %s"), $path));
+		}
 
-		$this->pages->trash($page); 
-
-		$this->message(sprintf($this->_("Moved page to trash: %s"), $path));
+		
 		$this->session->redirect("../?open={$parent_id}");
 	}
 
 
-	/* --- module un-/installation part --- */
 
+	/**
+	 * Create the modules setting page
+	 *
+	 */
+	static public function getModuleConfigInputfields(array $data) {
+	
+		// this is a container for fields, basically like a fieldset
+		$fields = new InputfieldWrapper();
+	
+		// since this is a static function, we can't use $this->modules, so get them from the global wire() function
+		$modules = wire('modules');
+	
+		// merge default config settings (custom values overwrite defaults)
+		$defaults = self::getDefaultConfig();
+		$data = array_merge($defaults, $data);
+	
+		// sender name
+		$field = $modules->get("InputfieldRadios");
+		$field->name = "action";
+		$field->label = "Action";
+		$field->description = "Choose if a page should be trashed or deleted directly.";
+		$field->addOption('delete', 'Delete');
+		$field->addOption('trash', 'Trash');
+		$field->value = $data['action'];
+		$fields->add($field);
+	
+		return $fields;
+	}
+
+
+
+	/**
+	* Install
+	*
+	*/
 	public function ___install() {
 
 		if(ProcessWire::versionMajor == 2 && ProcessWire::versionMinor < 2) {
@@ -109,7 +197,10 @@ class ProcessPageDelete extends Process {
 		$this->message(sprintf($this->_("Installed to %s"), $page->path)); 
 	}
 
-
+	/**
+	* Uninstall
+	*
+	*/
 	public function ___uninstall() {
 		$parent = $this->pages->get("name=page,parent=".$this->config->adminRootPageID);
 		$page = $parent->child("name=delete");
@@ -121,8 +212,10 @@ class ProcessPageDelete extends Process {
 	}
 
 
-	/* --- helper functions --- */
-
+	/**
+	* Helper: Inserting a value into an array
+	*
+	*/
 	private function array_insert($array, $pos, $val) {
 	   $array2 = array_splice($array,$pos);
 	   $array[] = $val;
