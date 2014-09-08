@@ -11,11 +11,11 @@ class ProcessPageDelete extends Process implements ConfigurableModule {
 
 	public static function getModuleInfo() {
 		return array(
-			'title' => __('Page Delete'), 
-			'version' => '1.2.3',
+			'title' => __('Page Delete'),
+			'version' => '1.2.4',
 			'summary' => __('Adds a delete/trash link to the page list.'),
 			'permission' => 'page-delete',
-			'autoload' => 'process=ProcessPageList' 
+			'autoload' => 'process=ProcessPageList'
 		);
 	}
 
@@ -49,17 +49,17 @@ class ProcessPageDelete extends Process implements ConfigurableModule {
 	public function init() {
 
 		parent::init();
-	
+
 		//  add the hooks
 		$this->addHookAfter("ProcessPageListRender::getPageActions", $this, 'hookPageListActions');
 		$this->addHookAfter('ProcessPageList::execute', $this, 'addJavascript');
-		
+
 		// add language to javascript
 		$this->config->js('ProcessPageDelete', array(
 			'sure' => __("Are you sure?")
 		));
 	}
-	
+
 
 	/**
 	* The hook function
@@ -91,20 +91,20 @@ class ProcessPageDelete extends Process implements ConfigurableModule {
 
 
 	/**
-	* Adding Javascript manually because this module is an autoload module and javascript 
+	* Adding Javascript manually because this module is an autoload module and javascript
 	* would be added before jquery if i would use the normal $config->script->add().
 	*/
 
 	public function addJavascript(HookEvent $event) {
 		// js path
-	
+
 		if($this->config->ajax) return; // so it only gets added on first time markup output
-	
+
 		$class = $this->className();
 		$info = $this->getModuleInfo();
 		$version = (int) $info['version'];
 		$path = $this->config->urls->$class . "ProcessPageDeleteCheck.js?v=$version";
-	
+
 		$event->return .= '<script type="text/javascript" src="'.$path.'"></script>';
 	}
 
@@ -122,10 +122,10 @@ class ProcessPageDelete extends Process implements ConfigurableModule {
 		$path = $page->url;
 
 		if($this->action == 'trash') {
-			$this->pages->trash($page); 
+			$this->pages->trash($page);
 			$this->message(sprintf($this->_("Moved page to trash: %s"), $path));
 		} else {
-			$this->pages->delete($page, true); 
+			$this->pages->delete($page, true);
 			$this->message(sprintf($this->_("Deleted page: %s"), $path));
 		}
 
@@ -173,24 +173,24 @@ class ProcessPageDelete extends Process implements ConfigurableModule {
 	public function ___install() {
 
 		if(ProcessWire::versionMajor == 2 && ProcessWire::versionMinor < 2) {
-			throw new WireException($this->_("This module requires ProcessWire 2.2 or newer")); 
+			throw new WireException($this->_("This module requires ProcessWire 2.2 or newer"));
 		}
 
 		// create "delete" page
-		$parent = $this->pages->get("name=page,parent=".$this->config->adminRootPageID); 
-		
+		$parent = $this->pages->get("name=page,parent=".$this->config->adminRootPageID);
+
 		$page = new Page();
 		$page->parent = $parent;
 		$page->template = $this->templates->get('admin');
-		$page->name = "delete"; 
+		$page->name = "delete";
 		$page->title = "Delete Page";
-		$page->process = $this; 
+		$page->process = $this;
 		$page->status = Page::statusHidden;
 		$page->sort = $parent->numChildren;
 		$page->save();
 
 		// success message
-		$this->message(sprintf($this->_("Installed to %s"), $page->path)); 
+		$this->message(sprintf($this->_("Installed to %s"), $page->path));
 	}
 
 	/**
@@ -199,11 +199,11 @@ class ProcessPageDelete extends Process implements ConfigurableModule {
 	*/
 	public function ___uninstall() {
 		$parent = $this->pages->get("name=page,parent=".$this->config->adminRootPageID);
-		$page = $parent->child("name=delete");
+		$page = $parent->child("name=delete,include=hidden");
 
-		if($page->id) { 
+		if($page->id) {
 			$this->message(sprintf($this->_("Removed %s"), $page->path));
-			$this->pages->delete($page); 
+			$this->pages->delete($page);
 		}
 	}
 
